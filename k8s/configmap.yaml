@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: quilr-onboard-config
+  namespace: quilr-onboard
+data:
+  DATABASE_PATH: /data/app.db
+  FRONTEND_URL: https://172.18.181.84:3000
+  CORS_ORIGINS: https://172.18.181.84:3000
+  MS_TENANT_ID: common
+  MS_REDIRECT_URI: https://172.18.181.84:3000/auth/callback
+  AUTH_REQUIRED_GROUPS: CustomerOnboardAdmin
+  PG_DATABASE: quilr_auth
+  PG_SSLMODE: prefer
+  TENANT_TABLE: public.tenant
+  TENANT_MATCH_COLUMN: name
+  TENANT_NAME_COLUMN: name
+  TENANT_ID_COLUMN: id
+  TENANT_SUBSCRIBER_COLUMN: subscriberId
+  CONNECTION_TIMEOUT_SECONDS: "30"
+  BFF_TIMEOUT_SECONDS: "30"
+  BFF_VERIFY_SSL: "true"
+  BFF_TLS_VERSION: "1.3"
+  INTERNAL_USER_CACHE_TTL_SECONDS: "300"
+  ROLE_TABLE: public.roles
+  GROUP_TABLE: public.group
+  USER_TABLE: public.user
+  USER_TENANT_COLUMN: tenantIds
+  USER_TENANT_MATCH_MODE: any
+  USER_SUBSCRIBER_COLUMN: subscriberId
+  USER_ACCOUNT_TYPE_COLUMN: accountType
+  USER_ACCOUNT_TYPE_VALUE: credentials
+  USER_ACCOUNT_TYPE_OAUTH_VALUE: oauth
+  USER_FIRST_NAME_COLUMN: firstname
+  USER_LAST_NAME_COLUMN: lastname
+  USER_USERNAME_COLUMN: username
+  USER_EMAIL_COLUMN: email
+  USER_PASSWORD_COLUMN: password
+  USER_ROLE_IDS_COLUMN: roleIds
+  USER_GROUP_IDS_COLUMN: groupIds
+  USER_STATUS_COLUMN: status
+  USER_VERIFICATION_COLUMN: verification_status
+  USER_CREATEDBY_COLUMN: createdby
+  USER_UPDATEDBY_COLUMN: updatedby
+  USER_EMAIL_SENT_COLUMN: emailSent
+  USER_ID_COLUMN: id
+  INTERNAL_USER_DEFAULT_STATUS: active
+  INTERNAL_USER_DEFAULT_VERIFICATION_STATUS: unverified
+  INTERNAL_USER_DEFAULT_CREATEDBY: OnboardingPortal
+  INTERNAL_USER_DEFAULT_UPDATEDBY: OnboardingPortal
+  INTERNAL_USER_DEFAULT_EMAIL_SENT: "false"
+  DEV_AUTH_BYPASS: "false"

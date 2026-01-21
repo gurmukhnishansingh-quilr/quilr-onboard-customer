@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quilr-backend
+  namespace: quilr-onboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quilr-backend
+  template:
+    metadata:
+      labels:
+        app: quilr-backend
+    spec:
+      containers:
+        - name: api
+          image: localhost:32000/quilr-onboard-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: quilr-onboard-config
+            - secretRef:
+                name: quilr-onboard-secrets
+          volumeMounts:
+            - name: db
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 20
+      volumes:
+        - name: db
+          persistentVolumeClaim:
+            claimName: quilr-backend-db
