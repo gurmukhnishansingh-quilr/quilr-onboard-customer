@@ -62,6 +62,16 @@ def _build_tls_context() -> ssl.SSLContext | None:
         context.minimum_version = ssl.TLSVersion.TLSv1_3
         context.maximum_version = ssl.TLSVersion.TLSv1_3
         return context
+    if version in {"1.2", "tls1.2", "tlsv1.2"} and hasattr(ssl, "TLSVersion"):
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+        context.maximum_version = ssl.TLSVersion.TLSv1_2
+        return context
+    if version in {"1.2+", "1.2-1.3", "tls1.2-1.3"} and hasattr(ssl, "TLSVersion"):
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+        context.maximum_version = ssl.TLSVersion.TLSv1_3
+        return context
     return None
 
 app.add_middleware(
