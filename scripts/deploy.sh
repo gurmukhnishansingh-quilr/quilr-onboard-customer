@@ -52,6 +52,13 @@ build_frontend() {
   docker push "${FRONTEND_IMAGE}"
 }
 
+apply_namespace() {
+  if [[ -f "${ROOT_DIR}/k8s/namespace.yaml" ]]; then
+    echo "Creating namespace ${NAMESPACE}..."
+    ${KUBECTL} apply -f "${ROOT_DIR}/k8s/namespace.yaml"
+  fi
+}
+
 apply_config() {
   if [[ -f "${ROOT_DIR}/k8s/configmap.yaml" ]]; then
     echo "Applying configmap..."
@@ -76,11 +83,13 @@ case "${target}" in
   all)
     build_backend
     build_frontend
+    apply_namespace
     apply_config
     rollout_backend
     rollout_frontend
     ;;
   backend)
+    apply_namespace
     build_backend
     apply_config
     rollout_backend
