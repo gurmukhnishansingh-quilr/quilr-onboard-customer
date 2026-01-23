@@ -832,6 +832,7 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
     try {
       await apiFetch("/api/test/postgres", {
         method: "POST",
+        timeout: 10000,
         json: {
           instance_id: instanceId,
           host: form.pg_host,
@@ -856,6 +857,7 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
     try {
       await apiFetch("/api/test/neo4j", {
         method: "POST",
+        timeout: 10000,
         json: {
           instance_id: instanceId,
           host: form.neo4j_host,

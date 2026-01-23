@@ -14,19 +14,40 @@ export const API_BASE_URL = getBackendBaseUrl();
 
 type ApiOptions = RequestInit & {
   json?: unknown;
+  timeout?: number;
 };
 
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
-  const { json, headers, ...rest } = options;
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(headers || {})
-    },
-    body: json !== undefined ? JSON.stringify(json) : undefined,
-    ...rest
-  });
+  const { json, headers, timeout, ...rest } = options;
+
+  const controller = new AbortController();
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  if (timeout) {
+    timeoutId = setTimeout(() => controller.abort(), timeout);
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      signal: controller.signal,
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(headers || {})
+      },
+      body: json !== undefined ? JSON.stringify(json) : undefined,
+      ...rest
+    });
+  } catch (err) {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error("Request timed out");
+    }
+    throw err;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     const contentType = response.headers.get("content-type") || "";
