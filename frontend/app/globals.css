@@ -185,6 +185,111 @@ main {
   max-width: none;
 }
 
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--bg-dark) 0%, #0a1520 50%, var(--bg-dark) 100%);
+}
+
+.login-card {
+  background: linear-gradient(160deg, rgba(18, 28, 38, 0.95) 0%, rgba(12, 18, 25, 0.98) 100%);
+  border: 1px solid rgba(0, 255, 249, 0.2);
+  border-radius: 16px;
+  padding: 48px 40px;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  box-shadow:
+    0 0 40px rgba(0, 255, 249, 0.1),
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.login-logo {
+  margin-bottom: 24px;
+}
+
+.login-logo-img {
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 0 20px rgba(0, 255, 249, 0.4));
+  animation: float 3s ease-in-out infinite;
+}
+
+.login-title {
+  font-family: "HeavyData Nerd Font", var(--font-display);
+  font-size: 1.75rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--neon-cyan) 0%, #4ed0c8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.login-subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 32px;
+}
+
+.login-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff;
+  background: linear-gradient(135deg, #2a3a4a 0%, #1a2530 100%);
+  border: 1px solid rgba(0, 255, 249, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 255, 249, 0.1) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.login-button:hover {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 20px rgba(0, 255, 249, 0.3);
+  transform: translateY(-2px);
+}
+
+.login-button:hover::before {
+  opacity: 1;
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+.login-button-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.login-footer {
+  margin-top: 24px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
 .hero {
   display: grid;
   gap: 32px;
@@ -245,20 +350,26 @@ main {
   text-transform: uppercase;
 }
 
-.product-name {
+.product-name,
+.badge.product-name {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   font-family: "HeavyData Nerd Font", var(--font-display);
   font-size: 1.25rem;
   letter-spacing: 0.08em;
   text-transform: none;
   line-height: 1;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  width: 100%;
 }
 
 .product-logo {
-  width: 18px;
-  height: 18px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
   filter: drop-shadow(0 0 6px rgba(78, 208, 200, 0.3));
 }
@@ -925,8 +1036,8 @@ main {
   font-weight: 600;
   padding: 10px 12px;
   border-radius: var(--radius);
-  border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.04);
+  border: none;
+  background: none;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -951,15 +1062,11 @@ main {
 }
 
 .sidebar-nav a:hover {
-  border-color: rgba(0, 255, 249, 0.3);
-  background: rgba(0, 255, 249, 0.08);
-  box-shadow: 0 0 15px rgba(0, 255, 249, 0.1);
+  color: var(--neon-cyan);
 }
 
 .sidebar-nav a.active {
-  border-color: rgba(0, 255, 249, 0.5);
-  background: rgba(0, 255, 249, 0.12);
-  box-shadow: 0 0 20px rgba(0, 255, 249, 0.2), inset 0 0 10px rgba(0, 255, 249, 0.05);
+  color: var(--neon-cyan);
 }
 
 .sidebar-nav a.active::before {
