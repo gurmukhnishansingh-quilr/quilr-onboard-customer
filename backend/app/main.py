@@ -35,6 +35,8 @@ from .schemas import (
     PostgresTestRequest,
     Neo4jTestRequest,
     TokenExchangeRequest,
+    UserSettingsUpdate,
+    UserSettingsOut,
 )
 
 app = FastAPI(title=settings.app_name)
@@ -1040,6 +1042,52 @@ async def auth_logout(request: Request):
 def session_info(request: Request) -> SessionOut:
     user = request.session.get("user")
     return SessionOut(authenticated=bool(user), user=user)
+
+
+@app.get("/api/users/settings", response_model=UserSettingsOut)
+def get_user_settings(user: dict = Depends(require_user), db=Depends(get_db)):
+    row = db.execute(
+        "SELECT theme FROM user_settings WHERE user_email = ?",
+        (user["email"],)
+    ).fetchone()
+    if row:
+        return UserSettingsOut(theme=row["theme"] or "dark")
+    return UserSettingsOut(theme="dark")
+
+
+@app.put("/api/users/settings", response_model=UserSettingsOut)
+def update_user_settings(
+    payload: UserSettingsUpdate,
+    user: dict = Depends(require_user),
+    db=Depends(get_db)
+):
+    now = utc_now()
+    row = db.execute(
+        "SELECT id FROM user_settings WHERE user_email = ?",
+        (user["email"],)
+    ).fetchone()
+
+    if row:
+        if payload.theme is not None:
+            db.execute(
+                "UPDATE user_settings SET theme = ?, updated_at = ? WHERE user_email = ?",
+                (payload.theme, now, user["email"])
+            )
+        db.commit()
+    else:
+        settings_id = str(uuid4())
+        db.execute(
+            """INSERT INTO user_settings (id, user_email, theme, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (settings_id, user["email"], payload.theme or "dark", now, now)
+        )
+        db.commit()
+
+    row = db.execute(
+        "SELECT theme FROM user_settings WHERE user_email = ?",
+        (user["email"],)
+    ).fetchone()
+    return UserSettingsOut(theme=row["theme"] or "dark")
 
 
 @app.get("/api/config")

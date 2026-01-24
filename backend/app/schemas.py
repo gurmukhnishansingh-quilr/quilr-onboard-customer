@@ -138,3 +138,11 @@ class Neo4jTestRequest(BaseModel):
     port: int | None = None
     user: str | None = None
     password: str | None = None
+
+
+class UserSettingsUpdate(BaseModel):
+    theme: str | None = None
+
+
+class UserSettingsOut(BaseModel):
+    theme: str = "dark"

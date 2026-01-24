@@ -4,12 +4,12 @@ import { startMicrosoftLogin } from "../lib/msAuth";
 
 export default function Home() {
   return (
-    <main className="login-page cyber-grid scanline-overlay">
+    <main className="login-page">
       <div className="login-card animate-scale-in">
         <div className="login-logo">
           <img src="/icons/logo_32x32.png" alt="Quilr" className="login-logo-img" />
         </div>
-        <h1 className="login-title neon-text">Quilr Onboarding</h1>
+        <h1 className="login-title">Quilr Onboarding</h1>
         <p className="login-subtitle">Welcome to the onboarding portal</p>
         <button
           className="login-button"

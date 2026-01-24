@@ -392,10 +392,7 @@ main {
   text-align: center;
   max-width: 400px;
   width: 100%;
-  box-shadow:
-    0 0 40px rgba(0, 255, 249, 0.1),
-    0 20px 60px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 .login-logo {
@@ -405,8 +402,6 @@ main {
 .login-logo-img {
   width: 64px;
   height: 64px;
-  filter: drop-shadow(0 0 20px rgba(0, 255, 249, 0.4));
-  animation: float 3s ease-in-out infinite;
 }
 
 .login-title {
@@ -456,7 +451,6 @@ main {
 
 .login-button:hover {
   border-color: var(--neon-cyan);
-  box-shadow: 0 0 20px rgba(0, 255, 249, 0.3);
   transform: translateY(-2px);
 }
 

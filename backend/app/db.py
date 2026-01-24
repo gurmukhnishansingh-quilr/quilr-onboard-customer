@@ -73,6 +73,17 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_settings (
+                id TEXT PRIMARY KEY,
+                user_email TEXT NOT NULL UNIQUE,
+                theme TEXT DEFAULT 'dark',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
         _ensure_instance_columns(conn)
         _ensure_customer_columns(conn)
         _ensure_internal_user_cache_columns(conn)
