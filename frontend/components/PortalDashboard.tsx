@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../lib/api";
 import type {
   Customer,
@@ -187,6 +188,7 @@ function SettingsView() {
 }
 
 export default function PortalDashboard({ view = "customers" }: { view?: DashboardView }) {
+  const router = useRouter();
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [instances, setInstances] = useState<Instance[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -254,6 +256,8 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
   const [commentBusy, setCommentBusy] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
   const [commentLoading, setCommentLoading] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (commentTargetCustomer && !commentModalOpen) {
       setCommentModalOpen(true);
@@ -311,6 +315,24 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
     return Boolean(currentEmail && currentEmail === author);
   };
 
+  const isAuthError = (err: unknown) => {
+    const status = (err as { status?: number })?.status;
+    return status === 401 || status === 403;
+  };
+
+  const logoutAndRedirect = async () => {
+    try {
+      await apiFetch("/auth/logout");
+    } catch (err) {
+      // Ignore logout errors; we just need to clear local state.
+    }
+    setSession(null);
+    setInstances([]);
+    setCustomers([]);
+    setLoading(false);
+    router.push("/");
+  };
+
   const loadData = async () => {
     setError(null);
     setLoading(true);
@@ -318,13 +340,16 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
       const sessionInfo = await apiFetch<SessionInfo>("/api/session");
       setSession(sessionInfo);
       if (!sessionInfo.authenticated) {
-        setInstances([]);
-        setCustomers([]);
+        await logoutAndRedirect();
         return;
       }
       const [instanceRows] = await Promise.all([apiFetch<Instance[]>("/api/instances")]);
       setInstances(instanceRows);
     } catch (err) {
+      if (isAuthError(err)) {
+        await logoutAndRedirect();
+        return;
+      }
       setError(err instanceof Error ? err.message : "Failed to load portal data.");
     } finally {
       setLoading(false);
@@ -345,6 +370,10 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
       setCustomers(customerRows);
       setPushMessage(null);
     } catch (err) {
+      if (isAuthError(err)) {
+        await logoutAndRedirect();
+        return;
+      }
       setError(err instanceof Error ? err.message : "Failed to load customers.");
     } finally {
       setLoadingCustomers(false);
@@ -362,6 +391,27 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
     void loadCustomers();
   }, [view, session?.authenticated]);
 
+  useEffect(() => {
+    const handleClickAway = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickAway);
+    return () => {
+      document.removeEventListener("mousedown", handleClickAway);
+    };
+  }, []);
+
+  const userInitials = useMemo(() => {
+    const name = session?.user?.name?.trim();
+    if (name) {
+      const parts = name.split(/\s+/).filter(Boolean);
+      return `${parts[0]?.[0] || ""}${parts[1]?.[0] || ""}`.toUpperCase() || "OP";
+    }
+    const email = session?.user?.email || "";
+    return (email.slice(0, 2) || "OP").toUpperCase();
+  }, [session?.user?.name, session?.user?.email]);
 
   const resetInstanceForm = () => {
     setInstanceForm(emptyInstanceForm);
@@ -1104,8 +1154,7 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
   };
 
   const handleLogout = async () => {
-    await apiFetch("/auth/logout");
-    await loadData();
+    await logoutAndRedirect();
   };
 
   if (loading && !session) {
@@ -1161,10 +1210,66 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
           </div>
         </div>
         <div className="topbar-meta">
-          <span className="topbar-chip">Control deck</span>
-          {session?.user?.email ? (
-            <span className="topbar-chip subtle">Signed in as {session.user.email}</span>
-          ) : null}
+          <div className="topbar-profile" ref={profileMenuRef}>
+            <button
+              className="profile-chip"
+              type="button"
+              onClick={() => setProfileOpen((prev) => !prev)}
+              aria-label="Profile menu"
+              aria-expanded={profileOpen}
+            >
+              <span className="profile-avatar">{userInitials}</span>
+            </button>
+            {profileOpen ? (
+              <div className="topbar-profile-menu">
+                <div className="profile-info">
+                  <span className="profile-avatar large">{userInitials}</span>
+                  <div className="profile-text">
+                    <div className="profile-name">
+                      {session?.user?.name || "Operator"}
+                    </div>
+                    {session?.user?.email ? (
+                      <div className="profile-email">{session.user.email}</div>
+                    ) : null}
+                  </div>
+                </div>
+                <button
+                  className="menu-item"
+                  type="button"
+                  onClick={() => {
+                    setProfileOpen(false);
+                    void handleLogout();
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                    <path
+                      d="M10 6h4m-4 12h4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M8 4h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M4 12h9M10 8l3 4-3 4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Log out
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -1177,18 +1282,40 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
           >
             <span className="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" role="img">
-                <path
-                  d="M7 4h10l4 6-4 6H7L3 10 7 4Z"
+                <defs>
+                  <linearGradient id="instGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#4ed0c8" />
+                    <stop offset="100%" stopColor="#ff8a3d" />
+                  </linearGradient>
+                </defs>
+                <rect
+                  x="3.5"
+                  y="6.5"
+                  width="17"
+                  height="11"
+                  rx="1.6"
                   fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinejoin="round"
+                  stroke="url(#instGradient)"
+                  strokeWidth="1.4"
                 />
                 <path
-                  d="M7 4v12"
+                  d="M6.5 9.5h11"
                   fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
+                  stroke="url(#instGradient)"
+                  strokeWidth="1.4"
+                />
+                <path
+                  d="M8.5 12.5h7"
+                  fill="none"
+                  stroke="url(#instGradient)"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M10 15.5h4"
+                  fill="none"
+                  stroke="url(#instGradient)"
+                  strokeWidth="1.4"
                   strokeLinecap="round"
                 />
               </svg>
@@ -1202,27 +1329,33 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
           >
             <span className="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" role="img">
-                <path
-                  d="M8 13a4 4 0 1 1 8 0"
+                <defs>
+                  <linearGradient id="custGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#4ed0c8" />
+                    <stop offset="100%" stopColor="#f4d35e" />
+                  </linearGradient>
+                </defs>
+                <circle
+                  cx="12"
+                  cy="9"
+                  r="4"
                   fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
+                  stroke="url(#custGradient)"
+                  strokeWidth="1.4"
+                />
+                <path
+                  d="M5 19.5c0-2.8 2.2-5 5-5h4c2.8 0 5 2.2 5 5"
+                  fill="none"
+                  stroke="url(#custGradient)"
+                  strokeWidth="1.4"
                   strokeLinecap="round"
                 />
                 <path
-                  d="M4 20a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4"
+                  d="M9 9a3 3 0 0 1 6 0"
                   fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M7 9a5 5 0 0 1 10 0"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeDasharray="2 3"
+                  stroke="url(#custGradient)"
+                  strokeWidth="1.4"
+                  strokeDasharray="3 3"
                 />
               </svg>
             </span>
@@ -1259,37 +1392,6 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
             <div className="sidebar-username" title={session.user?.name || "operator"}>
               {session.user?.name || "operator"}
             </div>
-            <button
-              className="icon-button square"
-              onClick={() => void handleLogout()}
-              aria-label="Log out"
-              title="Log out"
-            >
-              <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
-                <path
-                  d="M10 6h4m-4 12h4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M8 4h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M4 12h9M10 8l3 4-3 4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
           </div>
         </div>
       </aside>

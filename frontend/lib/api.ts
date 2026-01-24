@@ -17,6 +17,8 @@ type ApiOptions = RequestInit & {
   timeout?: number;
 };
 
+type ApiError = Error & { status?: number };
+
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const { json, headers, timeout, ...rest } = options;
 
@@ -76,7 +78,9 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
         message = "";
       }
     }
-    throw new Error(message || `Request failed with ${response.status}`);
+    const error: ApiError = new Error(message || `Request failed with ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
 
   if (response.status === 204) {

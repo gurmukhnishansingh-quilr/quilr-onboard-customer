@@ -267,6 +267,7 @@ main {
   grid-template-rows: auto minmax(0, 1fr);
   min-height: 100vh;
   height: 100vh;
+  overflow: hidden;
 }
 
 .sidebar {
@@ -280,6 +281,7 @@ main {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  overflow: hidden;
 }
 
 .sidebar-logo {
@@ -305,22 +307,25 @@ main {
   font-weight: 600;
   padding: 10px 12px;
   border-radius: var(--radius);
-  border: none;
-  background: none;
+  border: 1px solid transparent;
+  background: linear-gradient(90deg, rgba(78, 208, 200, 0.08), rgba(255, 138, 61, 0.08));
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
 }
 
 .sidebar-nav a:hover {
   color: var(--accent-2);
-  background: none;
+  border-color: rgba(78, 208, 200, 0.4);
+  background: linear-gradient(90deg, rgba(78, 208, 200, 0.14), rgba(255, 138, 61, 0.14));
 }
 
 .sidebar-nav a.active {
   color: var(--accent-2);
   border: 1px solid var(--accent-2);
-  background: none;
+  background: linear-gradient(90deg, rgba(78, 208, 200, 0.2), rgba(255, 138, 61, 0.15));
+  box-shadow: 0 0 0 1px rgba(78, 208, 200, 0.15);
 }
 
 .nav-icon {
@@ -334,6 +339,16 @@ main {
 .nav-icon svg {
   width: 100%;
   height: 100%;
+  color: var(--muted);
+  transition: color 0.2s ease;
+}
+
+.sidebar-nav a:hover .nav-icon svg {
+  color: var(--accent-2);
+}
+
+.sidebar-nav a.active .nav-icon svg {
+  color: var(--accent-2);
 }
 
 .sidebar-footer {
@@ -366,7 +381,9 @@ main {
   height: 100%;
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   min-height: 0;
+  overflow: hidden;
 }
 
 .topbar {
@@ -417,6 +434,115 @@ main {
   gap: 10px;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.topbar-profile {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(15, 24, 33, 0.45);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.profile-chip:hover {
+  border-color: var(--accent-2);
+}
+
+.profile-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(78, 208, 200, 0.2), rgba(255, 138, 61, 0.2));
+  border: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.profile-avatar.large {
+  width: 44px;
+  height: 44px;
+  font-size: 1.05rem;
+}
+
+.profile-label {
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.profile-caret {
+  width: 16px;
+  height: 16px;
+}
+
+.topbar-profile-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 220px;
+  max-width: 260px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  padding: 12px;
+  z-index: 1000;
+}
+
+.profile-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 10px;
+}
+
+.profile-name {
+  font-weight: 700;
+}
+
+.profile-email {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.menu-item {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.menu-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.menu-item:hover {
+  border-color: var(--accent-2);
 }
 
 .topbar-chip {
@@ -691,6 +817,7 @@ main {
   min-height: 0;
   height: 100%;
   grid-auto-rows: minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .panel {
@@ -707,6 +834,7 @@ main {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  flex: 1 1 auto;
 }
 
 .panel h2 {
