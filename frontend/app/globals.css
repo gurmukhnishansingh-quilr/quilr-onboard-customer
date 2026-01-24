@@ -79,23 +79,25 @@ body {
 }
 
 [data-theme="light"] .sidebar {
-  background: #ffffff;
-  border-right: 1px solid var(--line);
+  background: transparent;
+  border-right: none;
+  box-shadow: none;
 }
 
 [data-theme="light"] .sidebar-nav a {
   background: transparent;
+  border: none;
   color: var(--ink);
 }
 
 [data-theme="light"] .sidebar-nav a:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: transparent;
   color: var(--accent-2);
 }
 
 [data-theme="light"] .sidebar-nav a.active {
-  border-color: var(--accent-2);
-  background: rgba(13, 148, 136, 0.1);
+  border: 1px solid var(--accent-2);
+  background: transparent;
   color: var(--accent-2);
 }
 
@@ -271,8 +273,9 @@ main {
   top: 0;
   height: 100vh;
   padding: 32px 18px;
-  background: linear-gradient(180deg, #0f1821 0%, #0b1117 100%);
-  border-right: 1px solid var(--line);
+  background: transparent;
+  border-right: none;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -295,21 +298,22 @@ main {
   font-weight: 600;
   padding: 10px 12px;
   border-radius: var(--radius);
-  border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.04);
+  border: none;
+  background: none;
   display: inline-flex;
   align-items: center;
   gap: 10px;
 }
 
 .sidebar-nav a:hover {
-  border-color: var(--line);
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent-2);
+  background: none;
 }
 
 .sidebar-nav a.active {
-  border-color: var(--accent);
-  background: rgba(255, 138, 61, 0.12);
+  color: var(--accent-2);
+  border: 1px solid var(--accent-2);
+  background: none;
 }
 
 .nav-icon {
@@ -1204,12 +1208,12 @@ main {
   top: 0;
   height: 100vh;
   padding: 32px 18px;
-  background: linear-gradient(180deg, #0f1821 0%, #0b1117 100%);
-  border-right: 1px solid rgba(0, 255, 249, 0.2);
+  background: transparent;
+  border-right: none;
   display: flex;
   flex-direction: column;
   gap: 24px;
-  box-shadow: 4px 0 20px rgba(0, 255, 249, 0.05);
+  box-shadow: none;
 }
 
 /* Enhanced Sidebar Nav Links */
@@ -1245,11 +1249,16 @@ main {
 }
 
 .sidebar-nav a:hover {
-  color: var(--neon-cyan);
+  color: var(--accent-2);
 }
 
 .sidebar-nav a.active {
-  color: var(--neon-cyan);
+  color: var(--accent-2);
+  border: 1px solid var(--accent-2);
+}
+
+.sidebar-nav a.active::before {
+  width: 100%;
 }
 
 /* Enhanced Panel Styles */
