@@ -113,10 +113,10 @@ function SettingsView() {
 
   return (
     <section className="panel-grid">
-      <div className="panel hover-glow animate-in delay-1">
+      <div className="panel animate-in delay-1">
         <div className="panel-header">
           <div>
-            <h2 className="neon-text">Settings</h2>
+            <h2 className="heading-accent">Settings</h2>
             <p>Customize your portal experience.</p>
           </div>
         </div>
@@ -960,9 +960,9 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
 
   if (loading && !session) {
     return (
-      <main className="cyber-grid">
+      <main>
         <section className="hero-card animate-in">
-          <h1 className="neon-text pulse">Loading portal...</h1>
+          <h1>Loading portal...</h1>
           <p className="status">Warming up your onboarding control deck.</p>
         </section>
       </main>
@@ -971,25 +971,25 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
 
   if (!session?.authenticated) {
     return (
-      <main className="cyber-grid">
+      <main>
         <section className="hero">
-          <div className="hero-card animate-in hover-lift">
-            <span className="badge pulse">Auth Required</span>
-            <h1 className="neon-flicker">Sign in to manage customers.</h1>
+          <div className="hero-card animate-in">
+            <span className="badge">Auth Required</span>
+            <h1>Sign in to manage customers.</h1>
             <p>
               Use Microsoft OAuth to unlock the onboarding portal and start provisioning
               instances.
             </p>
             <div className="toolbar">
               <button
-                className="button hover-lift pulse"
+                className="button"
                 onClick={() => {
                   void startMicrosoftLogin();
                 }}
               >
                 Login with Microsoft
               </button>
-              <a className="button secondary hover-glow" href="/">
+              <a className="button secondary" href="/">
                 Back to home
               </a>
             </div>
@@ -1001,12 +1001,12 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
   }
 
   return (
-    <main className="dashboard-layout cyber-grid scanline-overlay">
+    <main className="dashboard-layout">
       <aside className="sidebar animate-in-left">
         <div>
-          <span className="badge product-name float">
+          <span className="badge product-name">
             <img className="product-logo" src="/icons/logo_32x32.png" alt="Quilr" />
-            <span className="neon-text">Quilr Onboarding</span>
+            <span>Quilr Onboarding</span>
           </span>
         </div>
         <nav className="sidebar-nav">
@@ -1145,15 +1145,15 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
         {view === "instances" ? (
           <>
             <section className="panel-grid full-height">
-              <div className="panel table-panel hover-glow animate-in delay-1">
+              <div className="panel table-panel animate-in delay-1">
                 <div className="panel-header">
                   <div>
-                    <h2 className="neon-text">
+                    <h2 className="heading-accent">
                       Instances <span className="table-count">({instances.length})</span>
                     </h2>
                   </div>
                   <button
-                    className="icon-button hover-lift"
+                    className="icon-button "
                     type="button"
                     onClick={openAddInstance}
                     aria-label="Add instance"
@@ -1265,8 +1265,8 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
                 <div className="modal neon-border">
                   <div className="modal-header">
                     <div>
-                      <span className="badge pulse">Instance Wizard</span>
-                      <h2 className="neon-text-orange">{instanceModalMode === "edit" ? "Edit instance" : "Add instance"}</h2>
+                      <span className="badge">Instance Wizard</span>
+                      <h2 className="heading-accent">{instanceModalMode === "edit" ? "Edit instance" : "Add instance"}</h2>
                     </div>
                     <button
                       className="icon-button square"
@@ -1642,10 +1642,10 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
         {view === "customers" ? (
           <>
             <section className="panel-grid full-height">
-              <div className="panel table-panel hover-glow animate-in delay-1">
+              <div className="panel table-panel animate-in delay-1">
                 <div className="panel-header">
                   <div>
-                    <h2 className="neon-text">
+                    <h2 className="heading-accent">
                       Customers <span className="table-count">({customers.length})</span>
                     </h2>
                     <p>Track every onboarded customer and their instance.</p>
@@ -1783,8 +1783,8 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
                 <div className="modal neon-border">
                   <div className="modal-header">
                     <div>
-                      <span className="badge pulse">Customer Wizard</span>
-                      <h2 className="neon-text-orange">{customerModalMode === "edit" ? "Edit customer" : "Add customer"}</h2>
+                      <span className="badge">Customer Wizard</span>
+                      <h2 className="heading-accent">{customerModalMode === "edit" ? "Edit customer" : "Add customer"}</h2>
                     </div>
                     <button
                       className="icon-button square"
@@ -2381,8 +2381,8 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
                 <div className="modal neon-border">
                   <div className="modal-header">
                     <div>
-                      <span className="badge pulse">Internal User</span>
-                      <h2 className="neon-text-orange">Change password</h2>
+                      <span className="badge">Internal User</span>
+                      <h2 className="heading-accent">Change password</h2>
                     </div>
                     <button
                       className="icon-button square"
