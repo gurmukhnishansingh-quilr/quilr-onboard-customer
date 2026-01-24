@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../lib/api";
 import type { Customer, Instance, InternalUser, SessionInfo } from "../lib/types";
 import { startMicrosoftLogin } from "../lib/msAuth";
+import { useTheme, type Theme } from "../lib/ThemeContext";
 
 type InstanceForm = {
   name: string;
@@ -52,11 +53,12 @@ const emptyCustomerForm: CustomerForm = {
   instance_id: ""
 };
 
-type DashboardView = "instances" | "customers";
+type DashboardView = "instances" | "customers" | "settings";
 
 const viewTitles: Record<DashboardView, string> = {
   instances: "Instances",
-  customers: "Customers"
+  customers: "Customers",
+  settings: "Settings"
 };
 
 const getCustomerNameParts = (customer: Customer) => {
@@ -100,6 +102,83 @@ const parseEnvText = (text: string) => {
   });
   return values;
 };
+
+const themeOptions: { value: Theme; label: string; description: string }[] = [
+  { value: "dark", label: "Dark", description: "Cyberpunk neon theme with dark backgrounds" },
+  { value: "light", label: "Light", description: "Clean light theme with softer colors" }
+];
+
+function SettingsView() {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <section className="panel-grid">
+      <div className="panel hover-glow animate-in delay-1">
+        <div className="panel-header">
+          <div>
+            <h2 className="neon-text">Settings</h2>
+            <p>Customize your portal experience.</p>
+          </div>
+        </div>
+        <div className="settings-section">
+          <h3 className="settings-section-title">Appearance</h3>
+          <div className="settings-group">
+            <label className="settings-label">Theme</label>
+            <p className="settings-description">Choose how the portal looks to you.</p>
+            <div className="theme-options">
+              {themeOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`theme-option ${theme === option.value ? "active" : ""}`}
+                  onClick={() => setTheme(option.value)}
+                  aria-pressed={theme === option.value}
+                >
+                  <span className="theme-option-icon">
+                    {option.value === "dark" ? (
+                      <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                        <path
+                          d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                        />
+                        <path
+                          d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    )}
+                  </span>
+                  <span className="theme-option-content">
+                    <span className="theme-option-label">{option.label}</span>
+                    <span className="theme-option-description">{option.description}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function PortalDashboard({ view = "customers" }: { view?: DashboardView }) {
   const [session, setSession] = useState<SessionInfo | null>(null);
@@ -988,6 +1067,31 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
               </svg>
             </span>
             Customers
+          </Link>
+          <Link
+            href="/dashboard/settings"
+            className={view === "settings" ? "active" : ""}
+            aria-current={view === "settings" ? "page" : undefined}
+          >
+            <span className="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img">
+                <path
+                  d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                />
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+            Settings
           </Link>
         </nav>
         <div className="sidebar-footer">
@@ -2429,6 +2533,10 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
               </div>
             ) : null}
           </>
+        ) : null}
+
+        {view === "settings" ? (
+          <SettingsView />
         ) : null}
       </div>
     </main>

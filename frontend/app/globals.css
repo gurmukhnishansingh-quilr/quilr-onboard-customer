@@ -59,6 +59,196 @@ body {
   --glow-blue: 0 0 10px #05d9e8, 0 0 20px #05d9e8, 0 0 40px #05d9e8;
 }
 
+/* Light theme overrides */
+[data-theme="light"] {
+  --bg: #f5f7fa;
+  --bg-2: #e8ecf1;
+  --ink: #1a2332;
+  --muted: #5a6678;
+  --accent: #e67528;
+  --accent-2: #2aa198;
+  --accent-3: #c9a227;
+  --card: #ffffff;
+  --line: rgba(26, 35, 50, 0.12);
+  --shadow: 0 22px 60px rgba(0, 0, 0, 0.12);
+  --glow: 0 0 32px rgba(42, 161, 152, 0.15);
+
+  /* Light neon colors (softer) */
+  --neon-cyan: #0d9488;
+  --neon-magenta: #c026d3;
+  --neon-pink: #db2777;
+  --neon-blue: #0891b2;
+  --neon-purple: #7c3aed;
+  --neon-orange: #ea580c;
+
+  /* Softer glow effects for light mode */
+  --glow-cyan: 0 0 8px rgba(13, 148, 136, 0.4);
+  --glow-magenta: 0 0 8px rgba(192, 38, 211, 0.4);
+  --glow-orange: 0 0 8px rgba(234, 88, 12, 0.4);
+  --glow-pink: 0 0 8px rgba(219, 39, 119, 0.4);
+  --glow-blue: 0 0 8px rgba(8, 145, 178, 0.4);
+}
+
+[data-theme="light"] body {
+  background:
+    radial-gradient(circle at top left, rgba(42, 161, 152, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 10% 90%, rgba(230, 117, 40, 0.08) 0%, transparent 45%),
+    linear-gradient(180deg, #f5f7fa 0%, #eef1f5 50%, #f5f7fa 100%);
+}
+
+[data-theme="light"] .sidebar {
+  background: linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%);
+  border-right-color: rgba(26, 35, 50, 0.1);
+}
+
+[data-theme="light"] .sidebar-nav a {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .sidebar-nav a:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .sidebar-nav a.active {
+  border-color: rgba(230, 117, 40, 0.5);
+  background: rgba(230, 117, 40, 0.1);
+}
+
+[data-theme="light"] .panel {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 60%);
+  border-color: rgba(26, 35, 50, 0.1);
+}
+
+[data-theme="light"] .table th {
+  background: rgba(0, 0, 0, 0.03);
+  border-bottom-color: rgba(26, 35, 50, 0.1);
+}
+
+[data-theme="light"] .table td {
+  border-bottom-color: rgba(26, 35, 50, 0.06);
+}
+
+[data-theme="light"] .table tbody tr:hover {
+  background: rgba(42, 161, 152, 0.05);
+}
+
+[data-theme="light"] .neon-text {
+  color: var(--neon-cyan);
+  text-shadow: none;
+}
+
+[data-theme="light"] .badge {
+  background: rgba(42, 161, 152, 0.12);
+  color: #0d7377;
+}
+
+[data-theme="light"] .button {
+  background: linear-gradient(135deg, #e67528 0%, #f59e0b 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(230, 117, 40, 0.25);
+}
+
+[data-theme="light"] .button:hover {
+  background: linear-gradient(135deg, #d96a1f 0%, #e68a00 100%);
+  box-shadow: 0 6px 20px rgba(230, 117, 40, 0.35);
+}
+
+[data-theme="light"] .button::before {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="light"] .button.secondary {
+  background: #ffffff;
+  color: var(--ink);
+  border: 1px solid rgba(26, 35, 50, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .button.secondary:hover {
+  background: #f8fafc;
+  border-color: rgba(42, 161, 152, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .button.ghost {
+  background: transparent;
+  color: var(--muted);
+  border-color: rgba(26, 35, 50, 0.15);
+}
+
+[data-theme="light"] .button.ghost:hover {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(26, 35, 50, 0.25);
+}
+
+[data-theme="light"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] .modal {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+  border-color: rgba(26, 35, 50, 0.15);
+}
+
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  background: #ffffff;
+  border-color: rgba(26, 35, 50, 0.15);
+  color: var(--ink);
+}
+
+[data-theme="light"] input:focus,
+[data-theme="light"] select:focus,
+[data-theme="light"] textarea:focus {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 3px rgba(42, 161, 152, 0.1);
+}
+
+[data-theme="light"] .hero-card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 60%);
+  border-color: rgba(230, 117, 40, 0.2);
+}
+
+[data-theme="light"] .icon-button {
+  color: var(--ink);
+  background: #ffffff;
+  border-color: rgba(26, 35, 50, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .icon-button:hover {
+  background: #f8fafc;
+  border-color: rgba(42, 161, 152, 0.4);
+  color: var(--neon-cyan);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .login-card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+  border-color: rgba(13, 148, 136, 0.3);
+}
+
+[data-theme="light"] .login-title {
+  background: linear-gradient(135deg, #0d7377 0%, #2aa198 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="light"] .login-button {
+  background: linear-gradient(135deg, #e67528 0%, #f59e0b 100%);
+  color: #ffffff;
+  border-color: rgba(230, 117, 40, 0.4);
+  box-shadow: 0 4px 14px rgba(230, 117, 40, 0.2);
+}
+
+[data-theme="light"] .login-button:hover {
+  background: linear-gradient(135deg, #d96a1f 0%, #e68a00 100%);
+  border-color: rgba(230, 117, 40, 0.6);
+  box-shadow: 0 6px 20px rgba(230, 117, 40, 0.3);
+}
+
 body {
   font-family: var(--font-body);
   color: var(--ink);
@@ -365,6 +555,10 @@ main {
   box-shadow: none !important;
   padding: 0 !important;
   width: 100%;
+}
+
+.product-name .neon-text {
+  text-shadow: none;
 }
 
 .product-logo {
@@ -1417,4 +1611,133 @@ body::after {
     width: 100%;
     flex: 1 1 auto;
   }
+}
+
+/* Settings page styles */
+.settings-section {
+  padding: 24px 0;
+}
+
+.settings-section-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--ink);
+  margin: 0 0 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-group {
+  margin-bottom: 24px;
+}
+
+.settings-label {
+  display: block;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.settings-description {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0 0 16px;
+}
+
+.theme-options {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.theme-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-family: inherit;
+  color: var(--ink);
+}
+
+.theme-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 138, 61, 0.3);
+}
+
+.theme-option.active {
+  border-color: var(--accent);
+  background: rgba(255, 138, 61, 0.1);
+  box-shadow: 0 0 20px rgba(255, 138, 61, 0.15);
+}
+
+.theme-option-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.theme-option-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.theme-option.active .theme-option-icon {
+  background: rgba(255, 138, 61, 0.2);
+  color: var(--accent);
+}
+
+.theme-option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.theme-option-label {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.theme-option-description {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Light theme settings overrides */
+[data-theme="light"] .theme-option {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] .theme-option:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(230, 117, 40, 0.4);
+}
+
+[data-theme="light"] .theme-option.active {
+  border-color: var(--accent);
+  background: rgba(230, 117, 40, 0.08);
+  box-shadow: 0 0 15px rgba(230, 117, 40, 0.1);
+}
+
+[data-theme="light"] .theme-option-icon {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .theme-option.active .theme-option-icon {
+  background: rgba(230, 117, 40, 0.15);
+  color: var(--accent);
+}
+
+[data-theme="light"] .settings-section-title {
+  border-bottom-color: rgba(26, 35, 50, 0.1);
 }
