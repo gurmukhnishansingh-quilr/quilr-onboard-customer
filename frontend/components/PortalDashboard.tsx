@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../lib/api";
-import type { Customer, Instance, InternalUser, SessionInfo } from "../lib/types";
+import type {
+  Customer,
+  CustomerComment,
+  Instance,
+  InternalUser,
+  SessionInfo
+} from "../lib/types";
 import { startMicrosoftLogin } from "../lib/msAuth";
 import { useTheme, type Theme } from "../lib/ThemeContext";
 
@@ -240,6 +246,22 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [customerModalMode, setCustomerModalMode] = useState<"add" | "edit">("add");
   const [customerSearch, setCustomerSearch] = useState("");
+  const [commentModalOpen, setCommentModalOpen] = useState(false);
+  const [commentTargetCustomer, setCommentTargetCustomer] = useState<Customer | null>(null);
+  const [customerComments, setCustomerComments] = useState<CustomerComment[]>([]);
+  const [commentInput, setCommentInput] = useState("");
+  const [commentEditingId, setCommentEditingId] = useState<string | null>(null);
+  const [commentBusy, setCommentBusy] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [commentLoading, setCommentLoading] = useState(false);
+  useEffect(() => {
+    if (commentTargetCustomer && !commentModalOpen) {
+      setCommentModalOpen(true);
+    }
+    if (!commentTargetCustomer && commentModalOpen) {
+      setCommentModalOpen(false);
+    }
+  }, [commentTargetCustomer, commentModalOpen]);
 
   const instanceOptions = useMemo(() => {
     return instances.map((instance) => ({
@@ -263,13 +285,31 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
         customer.tenant_id,
         customer.subscriber,
         customer.instance_name,
-        customer.contact_email
+        customer.contact_email,
+        customer.comment
       ]
         .filter(Boolean)
         .map((value) => String(value).toLowerCase());
       return values.some((value) => value.includes(query));
     });
   }, [customerSearch, customers]);
+
+  const formatTimestamp = (value: string) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return date.toLocaleString();
+  };
+
+  const isVirtualCustomer = (customer: Customer) =>
+    Boolean(customer.id && customer.id.startsWith("tenant:"));
+
+  const canEditComment = (comment: CustomerComment) => {
+    const currentEmail = (session?.user?.email || "").toLowerCase();
+    const author = (comment.author_email || "").toLowerCase();
+    return Boolean(currentEmail && currentEmail === author);
+  };
 
   const loadData = async () => {
     setError(null);
@@ -322,6 +362,7 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
     void loadCustomers();
   }, [view, session?.authenticated]);
 
+
   const resetInstanceForm = () => {
     setInstanceForm(emptyInstanceForm);
     setEditingInstance(null);
@@ -358,6 +399,14 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
     setPasswordBusy(false);
     setPasswordError(null);
     setPasswordVisible(false);
+    setCommentModalOpen(false);
+    setCommentTargetCustomer(null);
+    setCustomerComments([]);
+    setCommentInput("");
+    setCommentEditingId(null);
+    setCommentBusy(false);
+    setCommentError(null);
+    setCommentLoading(false);
   };
 
   const loadInternalUsers = async (customer: Customer) => {
@@ -716,11 +765,11 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
         }
       }
       setError(message);
-      setCustomerWizardError(message);
-    } finally {
-      setBusy(false);
-    }
-  };
+    setCustomerWizardError(message);
+  } finally {
+    setBusy(false);
+  }
+};
 
   const handleCustomerSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -881,6 +930,107 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
     setPushMessage(null);
   };
 
+  const openCommentsModal = async (customer: Customer) => {
+    setCommentTargetCustomer(customer);
+    setCommentModalOpen(true);
+    setCommentError(null);
+    setCommentInput("");
+    setCommentEditingId(null);
+    setCustomerComments([]);
+    if (isVirtualCustomer(customer)) {
+      setCommentLoading(false);
+      setCommentError("Save this tenant as a customer before adding comments.");
+      return;
+    }
+    setCommentLoading(true);
+    try {
+      const rows = await apiFetch<CustomerComment[]>(`/api/customers/${customer.id}/comments`);
+      setCustomerComments(rows);
+    } catch (err) {
+      setCommentError(err instanceof Error ? err.message : "Failed to load comments.");
+      setCustomerComments([]);
+    } finally {
+      setCommentLoading(false);
+    }
+  };
+
+  const closeCommentsModal = () => {
+    setCommentModalOpen(false);
+    setCommentTargetCustomer(null);
+    setCustomerComments([]);
+    setCommentInput("");
+    setCommentEditingId(null);
+    setCommentError(null);
+    setCommentBusy(false);
+    setCommentLoading(false);
+  };
+
+  const saveComment = async () => {
+    if (!commentTargetCustomer) {
+      return;
+    }
+    const trimmed = commentInput.trim();
+    if (!trimmed) {
+      setCommentError("Comment cannot be empty.");
+      return;
+    }
+    setCommentBusy(true);
+    setCommentError(null);
+    try {
+      const endpoint = commentEditingId
+        ? `/api/customers/${commentTargetCustomer.id}/comments/${commentEditingId}`
+        : `/api/customers/${commentTargetCustomer.id}/comments`;
+      const saved = await apiFetch<CustomerComment>(endpoint, {
+        method: commentEditingId ? "PUT" : "POST",
+        json: { comment: trimmed }
+      });
+      if (commentEditingId) {
+        setCustomerComments((prev) =>
+          prev.map((row) => (row.id === commentEditingId ? saved : row))
+        );
+      } else {
+        setCustomerComments((prev) => [saved, ...prev]);
+      }
+      setCommentInput("");
+      setCommentEditingId(null);
+    } catch (err) {
+      setCommentError(err instanceof Error ? err.message : "Failed to save comment.");
+    } finally {
+      setCommentBusy(false);
+    }
+  };
+
+  const startEditComment = (comment: CustomerComment) => {
+    setCommentEditingId(comment.id);
+    setCommentInput(comment.comment);
+  };
+
+  const deleteComment = async (comment: CustomerComment) => {
+    if (!commentTargetCustomer) {
+      return;
+    }
+    if (!confirm("Delete this comment?")) {
+      return;
+    }
+    setCommentBusy(true);
+    setCommentError(null);
+    try {
+      await apiFetch(
+        `/api/customers/${commentTargetCustomer.id}/comments/${comment.id}`,
+        { method: "DELETE" }
+      );
+      setCustomerComments((prev) => prev.filter((row) => row.id !== comment.id));
+      if (commentEditingId === comment.id) {
+        setCommentEditingId(null);
+        setCommentInput("");
+      }
+    } catch (err) {
+      setCommentError(err instanceof Error ? err.message : "Failed to delete comment.");
+    } finally {
+      setCommentBusy(false);
+    }
+  };
+
   const handleEnvUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
@@ -1002,13 +1152,23 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
 
   return (
     <main className="dashboard-layout">
-      <aside className="sidebar animate-in-left">
-        <div>
-          <span className="badge product-name">
-            <img className="product-logo" src="/icons/logo_32x32.png" alt="Quilr" />
-            <span>Quilr Onboarding</span>
-          </span>
+      <div className="topbar">
+        <div className="topbar-brand">
+          <img className="topbar-logo" src="/icons/logo_32x32.png" alt="Quilr" />
+          <div>
+            <div className="topbar-overline">Product</div>
+            <div className="topbar-title">Quilr Onboarding</div>
+          </div>
         </div>
+        <div className="topbar-meta">
+          <span className="topbar-chip">Control deck</span>
+          {session?.user?.email ? (
+            <span className="topbar-chip subtle">Signed in as {session.user.email}</span>
+          ) : null}
+        </div>
+      </div>
+
+      <aside className="sidebar animate-in-left">
         <nav className="sidebar-nav">
           <Link
             href="/dashboard/instances"
@@ -1736,6 +1896,35 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
                             <td>{customer.subscriber || "—"}</td>
                             <td>{customer.instance_name || "Unassigned"}</td>
                             <td className="toolbar">
+                              <button
+                                className="icon-button"
+                                type="button"
+                                onClick={() => void openCommentsModal(customer)}
+                                aria-label="View comments"
+                                title={
+                                  isVirtualCustomer(customer)
+                                    ? "Save this tenant as a customer to add comments"
+                                    : "View comments"
+                                }
+                              >
+                                <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                                  <path
+                                    d="M4 5h16v12H7l-3 3V5Z"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.6"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                  <path
+                                    d="M8 9h8M8 12h5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.6"
+                                    strokeLinecap="round"
+                                  />
+                                </svg>
+                              </button>
                               <button
                                 className="icon-button"
                                 type="button"
@@ -2533,6 +2722,186 @@ export default function PortalDashboard({ view = "customers" }: { view?: Dashboa
               </div>
             ) : null}
           </>
+        ) : null}
+
+        {commentModalOpen ? (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.65)",
+              zIndex: 200000,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "24px"
+            }}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div
+              style={{
+                width: "min(900px, 96vw)",
+                maxHeight: "90vh",
+                overflow: "auto",
+                background: "var(--card)",
+                borderRadius: "var(--radius)",
+                border: "1px solid var(--line)",
+                padding: "24px",
+                boxShadow: "0 24px 60px rgba(0,0,0,0.25)",
+                position: "relative",
+                zIndex: 200001
+              }}
+              className="neon-border"
+            >
+              <div className="modal-header">
+                <div>
+                  <span className="badge">Customer comments</span>
+                  <h2 className="heading-accent">
+                    {commentTargetCustomer?.tenant_name ||
+                      commentTargetCustomer?.name ||
+                      "Customer"}
+                  </h2>
+                </div>
+                <button
+                  className="icon-button square"
+                  type="button"
+                  onClick={closeCommentsModal}
+                  aria-label="Close comments"
+                  title="Close comments"
+                >
+                  <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                    <path
+                      d="M6 6l12 12M18 6l-12 12"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div className="form">
+                <textarea
+                  className="input"
+                  placeholder="Add a comment"
+                  value={commentInput}
+                  onChange={(event) => setCommentInput(event.target.value)}
+                  rows={3}
+                  disabled={commentBusy}
+                />
+                <div className="toolbar">
+                  <button
+                    className="icon-button"
+                    type="button"
+                    onClick={() => void saveComment()}
+                    disabled={commentBusy}
+                    aria-label={commentEditingId ? "Update comment" : "Add comment"}
+                    title={commentEditingId ? "Update comment" : "Add comment"}
+                  >
+                    <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                      <path
+                        d="M5 13l4 4L19 7"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  {commentEditingId ? (
+                    <button
+                      className="icon-button square"
+                      type="button"
+                      onClick={() => {
+                        setCommentEditingId(null);
+                        setCommentInput("");
+                      }}
+                      disabled={commentBusy}
+                      aria-label="Cancel edit"
+                      title="Cancel edit"
+                    >
+                      <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                        <path
+                          d="M6 6l12 12M18 6l-12 12"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    </button>
+                  ) : null}
+                </div>
+                {commentError ? <p className="status">Error: {commentError}</p> : null}
+                {commentLoading ? (
+                  <p className="status">Loading comments...</p>
+                ) : customerComments.length ? (
+                  <div className="form">
+                    {customerComments.map((comment) => (
+                      <div key={comment.id} className="accent-card">
+                        <p>{comment.comment}</p>
+                        <p className="status">
+                          {comment.author_name || comment.author_email || "Unknown"} ·{" "}
+                          {formatTimestamp(comment.created_at)}
+                        </p>
+                        {canEditComment(comment) ? (
+                          <div className="toolbar">
+                            <button
+                              className="icon-button"
+                              type="button"
+                              onClick={() => startEditComment(comment)}
+                              disabled={commentBusy}
+                              aria-label="Edit comment"
+                              title="Edit comment"
+                            >
+                              <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                                <path
+                                  d="M4 20h4l10-10-4-4L4 16v4Z"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.6"
+                                  strokeLinejoin="round"
+                                />
+                                <path
+                                  d="M13 6l4 4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.6"
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              className="icon-button square"
+                              type="button"
+                              onClick={() => void deleteComment(comment)}
+                              disabled={commentBusy}
+                              aria-label="Delete comment"
+                              title="Delete comment"
+                            >
+                              <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                                <path
+                                  d="M6 6l12 12M18 6l-12 12"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.6"
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="status">No comments yet.</p>
+                )}
+              </div>
+            </div>
+          </div>
         ) : null}
 
         {view === "settings" ? (

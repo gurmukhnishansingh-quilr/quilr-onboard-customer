@@ -38,6 +38,7 @@ def init_db() -> None:
                 department TEXT,
                 vendor TEXT,
                 contact_email TEXT,
+                comment TEXT,
                 instance_id TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
@@ -75,6 +76,20 @@ def init_db() -> None:
         )
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS customer_comments (
+                id TEXT PRIMARY KEY,
+                customer_id TEXT NOT NULL,
+                comment TEXT NOT NULL,
+                author_email TEXT,
+                author_name TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE CASCADE
+            )
+            """
+        )
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS user_settings (
                 id TEXT PRIMARY KEY,
                 user_email TEXT NOT NULL UNIQUE,
@@ -86,6 +101,7 @@ def init_db() -> None:
         )
         _ensure_instance_columns(conn)
         _ensure_customer_columns(conn)
+        _ensure_customer_comment_columns(conn)
         _ensure_internal_user_cache_columns(conn)
         conn.commit()
     finally:
@@ -116,10 +132,23 @@ def _ensure_customer_columns(conn: sqlite3.Connection) -> None:
         "last_name": "last_name TEXT",
         "department": "department TEXT",
         "vendor": "vendor TEXT",
+        "comment": "comment TEXT",
     }
     for name, ddl in columns.items():
         if name not in existing:
             conn.execute(f"ALTER TABLE customers ADD COLUMN {ddl}")
+
+
+def _ensure_customer_comment_columns(conn: sqlite3.Connection) -> None:
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(customer_comments)").fetchall()}
+    columns = {
+        "author_email": "author_email TEXT",
+        "author_name": "author_name TEXT",
+        "tenant_id": "tenant_id TEXT",
+    }
+    for name, ddl in columns.items():
+        if name not in existing:
+            conn.execute(f"ALTER TABLE customer_comments ADD COLUMN {ddl}")
 
 
 def _ensure_internal_user_cache_columns(conn: sqlite3.Connection) -> None:

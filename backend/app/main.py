@@ -20,6 +20,9 @@ from .auth import callback, create_session_from_id_token, login, require_user
 from .config import settings
 from .db import get_db, init_db
 from .schemas import (
+    CustomerCommentCreate,
+    CustomerCommentOut,
+    CustomerCommentUpdate,
     CustomerCreate,
     CustomerOut,
     CustomerUpdate,
@@ -111,6 +114,124 @@ def _row_to_dict(row) -> dict:
 def _compose_name(first: str | None, last: str | None) -> str | None:
     parts = [part.strip() for part in (first, last) if part and part.strip()]
     return " ".join(parts) if parts else None
+
+
+def _current_user_email(user: dict | None) -> str | None:
+    if not user:
+        return None
+    email = user.get("email") or user.get("preferred_username")
+    return (email or "").strip() or None
+
+
+def _current_user_name(user: dict | None) -> str | None:
+    if not user:
+        return None
+    name = user.get("name")
+    return (name or "").strip() or None
+
+
+def _get_customer_or_404(customer_id: str, db) -> None:
+    if customer_id.startswith("tenant:"):
+        raise HTTPException(
+            status_code=400,
+            detail="Save this tenant as a customer before adding comments.",
+        )
+    row = db.execute("SELECT id FROM customers WHERE id = ?", (customer_id,)).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Customer not found.")
+
+
+def _get_comment_or_404(comment_id: str, customer_id: str, db):
+    row = db.execute(
+        """
+        SELECT id, customer_id, tenant_id, comment, author_email, author_name, created_at, updated_at
+        FROM customer_comments
+        WHERE id = ? AND customer_id = ?
+        """,
+        (comment_id, customer_id),
+    ).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Comment not found.")
+    return _row_to_dict(row)
+
+
+def _ensure_customer_name(customer: dict) -> None:
+    name = (customer.get("name") or "").strip()
+    if name:
+        customer["name"] = name
+        return
+    name = (
+        _compose_name(customer.get("first_name"), customer.get("last_name"))
+        or (customer.get("tenant_name") or "").strip()
+        or (customer.get("tenant_id") or "").strip()
+        or "—"
+    )
+    customer["name"] = name
+
+
+def _find_customer_by_name_and_instance(
+    name: str, instance_id: str | None, db
+) -> dict | None:
+    row = db.execute(
+        """
+        SELECT id, name, first_name, last_name, department, vendor, contact_email, comment,
+               instance_id, created_at, updated_at
+        FROM customers
+        WHERE name = ? AND instance_id IS ?
+        """,
+        (name, instance_id),
+    ).fetchone()
+    return _row_to_dict(row) if row else None
+
+
+def _load_customer_with_tenant(customer_id: str, db) -> dict:
+    row = db.execute(
+        """
+        SELECT id, name, first_name, last_name, contact_email, instance_id
+        FROM customers WHERE id = ?
+        """,
+        (customer_id,),
+    ).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Customer not found.")
+    customer = _row_to_dict(row)
+    instance_id = customer.get("instance_id")
+    instances = _load_instances(db, {instance_id} if instance_id else set())
+    _attach_tenant_info([customer], instances)
+    return customer
+
+
+def _auto_save_tenant_as_customer(tenant: dict, instance_id: str, db) -> dict:
+    name = (tenant.get("tenant_name") or tenant.get("match_value") or "—").strip() or "—"
+    existing = _find_customer_by_name_and_instance(name, instance_id, db)
+    if existing:
+        return existing
+    customer_id = str(uuid4())
+    now = utc_now()
+    db.execute(
+        """
+        INSERT INTO customers (
+            id, name, first_name, last_name, department, vendor,
+            contact_email, comment, instance_id, created_at, updated_at
+        )
+        VALUES (?, ?, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?)
+        """,
+        (customer_id, name, instance_id, now, now),
+    )
+    db.commit()
+    return {
+        "id": customer_id,
+        "name": name,
+        "first_name": None,
+        "last_name": None,
+        "department": None,
+        "vendor": None,
+        "contact_email": None,
+        "comment": None,
+        "instance_id": instance_id,
+        "created_at": now,
+        "updated_at": now,
+    }
 
 
 def _push_customer_to_neo4j(
@@ -947,6 +1068,7 @@ def _expand_customers_with_tenants(
     refresh: bool,
 ) -> None:
     match_column = settings.tenant_match_column.lower()
+    valid_instance_ids = set(instances.keys())
     for customer in customers:
         customer["tenant_name"] = customer.get("tenant_name")
         customer["tenant_id"] = customer.get("tenant_id")
@@ -993,23 +1115,14 @@ def _expand_customers_with_tenants(
                 continue
             if tenant["match_value"] and tenant["match_value"] in matched_keys:
                 continue
-            customers.append(
-                {
-                    "id": f"tenant:{instance_id}:{tenant['tenant_id']}",
-                    "name": tenant.get("tenant_name") or tenant["match_value"] or "—",
-                    "first_name": None,
-                    "last_name": None,
-                    "vendor": None,
-                    "contact_email": None,
-                    "instance_id": instance_id,
-                    "instance_name": instance.get("name"),
-                    "tenant_name": tenant.get("tenant_name"),
-                    "tenant_id": tenant.get("tenant_id"),
-                    "subscriber": tenant.get("subscriber"),
-                    "created_at": utc_now(),
-                    "updated_at": utc_now(),
-                }
-            )
+            if instance_id not in valid_instance_ids or not tenant.get("tenant_id"):
+                continue
+            saved_customer = _auto_save_tenant_as_customer(tenant, instance_id, db)
+            saved_customer["instance_name"] = instance.get("name")
+            saved_customer["tenant_name"] = tenant.get("tenant_name")
+            saved_customer["tenant_id"] = tenant.get("tenant_id")
+            saved_customer["subscriber"] = tenant.get("subscriber")
+            customers.append(saved_customer)
 
 
 @app.on_event("startup")
@@ -1343,7 +1456,7 @@ def list_customers(
     rows = db.execute(
         """
         SELECT customers.id, customers.name, customers.first_name, customers.last_name,
-               customers.department, customers.vendor, customers.contact_email, customers.instance_id,
+               customers.department, customers.vendor, customers.contact_email, customers.comment, customers.instance_id,
                customers.created_at, customers.updated_at, instances.name AS instance_name
         FROM customers
         LEFT JOIN instances ON customers.instance_id = instances.id
@@ -1351,7 +1464,14 @@ def list_customers(
     ).fetchall()
     customers = [_row_to_dict(row) for row in rows]
     instances = _load_instances(db)
+    customers = [
+        customer
+        for customer in customers
+        if customer.get("instance_id") or (customer.get("name") or "").strip() not in {"", "—"}
+    ]
     _expand_customers_with_tenants(customers, instances, db, refresh)
+    for customer in customers:
+        _ensure_customer_name(customer)
     return [CustomerOut(**customer) for customer in customers]
 
 
@@ -1738,15 +1858,16 @@ def create_customer(
     if instance and bff_payload:
         _notify_bff_onboard(instance.get("base_url"), bff_payload)
         _update_tenant_subscriber_flags(instance, payload.contact_email)
+    comment = (payload.comment or "").strip() or None
     customer_id = str(uuid4())
     now = utc_now()
     db.execute(
         """
         INSERT INTO customers (
             id, name, first_name, last_name, department, vendor,
-            contact_email, instance_id, created_at, updated_at
+            contact_email, comment, instance_id, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             customer_id,
@@ -1756,6 +1877,7 @@ def create_customer(
             payload.department,
             payload.vendor,
             payload.contact_email,
+            comment,
             payload.instance_id,
             now,
             now,
@@ -1765,7 +1887,7 @@ def create_customer(
     row = db.execute(
         """
         SELECT customers.id, customers.name, customers.first_name, customers.last_name,
-               customers.department, customers.vendor, customers.contact_email, customers.instance_id,
+               customers.department, customers.vendor, customers.contact_email, customers.comment, customers.instance_id,
                customers.created_at, customers.updated_at, instances.name AS instance_name
         FROM customers
         LEFT JOIN instances ON customers.instance_id = instances.id
@@ -1789,7 +1911,7 @@ def update_customer(
     row = db.execute(
         """
         SELECT id, name, first_name, last_name, department, vendor, contact_email, instance_id,
-               created_at, updated_at
+               comment, created_at, updated_at
         FROM customers WHERE id = ?
         """,
         (customer_id,),
@@ -1812,6 +1934,11 @@ def update_customer(
         if payload.name is not None
         else _compose_name(updated_first, updated_last) or current["name"]
     )
+    updated_comment = (
+        (payload.comment or "").strip()
+        if payload.comment is not None
+        else current.get("comment")
+    )
     updated = {
         "name": updated_name,
         "first_name": updated_first,
@@ -1826,13 +1953,14 @@ def update_customer(
         "instance_id": payload.instance_id
         if payload.instance_id is not None
         else current["instance_id"],
+        "comment": updated_comment,
         "updated_at": utc_now(),
     }
     db.execute(
         """
         UPDATE customers
         SET name = ?, first_name = ?, last_name = ?, department = ?, vendor = ?,
-            contact_email = ?, instance_id = ?, updated_at = ?
+            contact_email = ?, comment = ?, instance_id = ?, updated_at = ?
         WHERE id = ?
         """,
         (
@@ -1842,6 +1970,7 @@ def update_customer(
             updated["department"],
             updated["vendor"],
             updated["contact_email"],
+            updated["comment"],
             updated["instance_id"],
             updated["updated_at"],
             customer_id,
@@ -1851,7 +1980,7 @@ def update_customer(
     row = db.execute(
         """
         SELECT customers.id, customers.name, customers.first_name, customers.last_name,
-               customers.department, customers.vendor, customers.contact_email, customers.instance_id,
+               customers.department, customers.vendor, customers.contact_email, customers.comment, customers.instance_id,
                customers.created_at, customers.updated_at, instances.name AS instance_name
         FROM customers
         LEFT JOIN instances ON customers.instance_id = instances.id
@@ -1873,6 +2002,126 @@ def delete_customer(
     if not row:
         raise HTTPException(status_code=404, detail="Customer not found.")
     db.execute("DELETE FROM customers WHERE id = ?", (customer_id,))
+    db.commit()
+    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
+
+
+@app.get("/api/customers/{customer_id}/comments", response_model=list[CustomerCommentOut])
+def list_customer_comments(
+    customer_id: str, user: dict = Depends(require_user), db=Depends(get_db)
+):
+    _get_customer_or_404(customer_id, db)
+    rows = db.execute(
+        """
+        SELECT id, customer_id, tenant_id, comment, author_email, author_name, created_at, updated_at
+        FROM customer_comments
+        WHERE customer_id = ?
+        ORDER BY datetime(created_at) DESC
+        """,
+        (customer_id,),
+    ).fetchall()
+    return [CustomerCommentOut(**_row_to_dict(row)) for row in rows]
+
+
+@app.post(
+    "/api/customers/{customer_id}/comments",
+    response_model=CustomerCommentOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_customer_comment(
+    customer_id: str,
+    payload: CustomerCommentCreate,
+    user: dict = Depends(require_user),
+    db=Depends(get_db),
+):
+    customer = _load_customer_with_tenant(customer_id, db)
+    comment_id = str(uuid4())
+    now = utc_now()
+    db.execute(
+        """
+        INSERT INTO customer_comments (
+            id, customer_id, tenant_id, comment, author_email, author_name, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            comment_id,
+            customer_id,
+            customer.get("tenant_id"),
+            payload.comment.strip(),
+            _current_user_email(user),
+            _current_user_name(user),
+            now,
+            now,
+        ),
+    )
+    db.commit()
+    row = db.execute(
+        """
+        SELECT id, customer_id, tenant_id, comment, author_email, author_name, created_at, updated_at
+        FROM customer_comments
+        WHERE id = ?
+        """,
+        (comment_id,),
+    ).fetchone()
+    return CustomerCommentOut(**_row_to_dict(row))
+
+
+@app.put(
+    "/api/customers/{customer_id}/comments/{comment_id}",
+    response_model=CustomerCommentOut,
+)
+def update_customer_comment(
+    customer_id: str,
+    comment_id: str,
+    payload: CustomerCommentUpdate,
+    user: dict = Depends(require_user),
+    db=Depends(get_db),
+):
+    customer = _load_customer_with_tenant(customer_id, db)
+    _get_comment_or_404(comment_id, customer_id, db)
+    now = utc_now()
+    db.execute(
+        """
+        UPDATE customer_comments
+        SET comment = ?, author_email = ?, author_name = ?, tenant_id = ?, updated_at = ?
+        WHERE id = ? AND customer_id = ?
+        """,
+        (
+            payload.comment.strip(),
+            _current_user_email(user),
+            _current_user_name(user),
+            customer.get("tenant_id"),
+            now,
+            comment_id,
+            customer_id,
+        ),
+    )
+    db.commit()
+    row = db.execute(
+        """
+        SELECT id, customer_id, tenant_id, comment, author_email, author_name, created_at, updated_at
+        FROM customer_comments
+        WHERE id = ? AND customer_id = ?
+        """,
+        (comment_id, customer_id),
+    ).fetchone()
+    return CustomerCommentOut(**_row_to_dict(row))
+
+
+@app.delete("/api/customers/{customer_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_customer_comment(
+    customer_id: str,
+    comment_id: str,
+    user: dict = Depends(require_user),
+    db=Depends(get_db),
+):
+    _get_customer_or_404(customer_id, db)
+    _get_comment_or_404(comment_id, customer_id, db)
+    db.execute(
+        "DELETE FROM customer_comments WHERE id = ? AND customer_id = ?",
+        (comment_id, customer_id),
+    )
     db.commit()
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
 
@@ -1944,15 +2193,16 @@ def onboard_customer(
         raise HTTPException(
             status_code=400, detail="Customer first name and last name are required."
         )
+    comment = (payload.customer.comment or "").strip() or None
     customer_id = str(uuid4())
     now = utc_now()
     db.execute(
         """
         INSERT INTO customers (
             id, name, first_name, last_name, department, vendor,
-            contact_email, instance_id, created_at, updated_at
+            contact_email, comment, instance_id, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             customer_id,
@@ -1962,6 +2212,7 @@ def onboard_customer(
             payload.customer.department,
             payload.customer.vendor,
             payload.customer.contact_email,
+            comment,
             instance_id,
             now,
             now,

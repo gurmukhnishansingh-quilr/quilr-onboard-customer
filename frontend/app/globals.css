@@ -264,6 +264,7 @@ main {
   padding: 0;
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   min-height: 100vh;
   height: 100vh;
 }
@@ -272,13 +273,19 @@ main {
   position: sticky;
   top: 0;
   height: 100vh;
-  padding: 32px 18px;
+  padding: 18px 18px;
   background: transparent;
   border-right: none;
   box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+.sidebar-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .sidebar-title {
@@ -355,11 +362,94 @@ main {
 }
 
 .content {
-  padding: 48px 24px 80px;
+  padding: 24px 24px 80px;
   height: 100%;
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+.topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 20px 12px 18px;
+  margin: 0 0 12px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.topbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+  background: none;
+  padding: 0;
+  box-shadow: none;
+}
+
+.topbar-overline {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.topbar-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: 0.06em;
+}
+
+.topbar-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.topbar-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(15, 23, 42, 0.45);
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.topbar-chip.subtle {
+  background: rgba(15, 23, 42, 0.25);
+  color: var(--muted);
+}
+
+[data-theme="light"] .topbar {
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-theme="light"] .topbar-chip {
+  background: #ffffff;
+  color: var(--ink);
+}
+
+[data-theme="light"] .topbar-chip.subtle {
+  background: #f8fafc;
+  color: var(--muted);
 }
 
 .login-only {
@@ -771,7 +861,7 @@ main {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  z-index: 40;
+  z-index: 99999;
 }
 
 .modal {
@@ -783,6 +873,8 @@ main {
   border: 1px solid var(--line);
   padding: 24px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+  z-index: 100000;
+  position: relative;
 }
 
 .modal-header {

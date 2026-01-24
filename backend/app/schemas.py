@@ -46,6 +46,7 @@ class CustomerBase(BaseModel):
     department: str | None = None
     vendor: str | None = None
     contact_email: EmailStr | None = None
+    comment: str | None = None
     instance_id: str | None = None
 
 
@@ -60,6 +61,7 @@ class CustomerUpdate(BaseModel):
     department: str | None = None
     vendor: str | None = None
     contact_email: EmailStr | None = None
+    comment: str | None = None
     instance_id: str | None = None
 
 
@@ -71,6 +73,28 @@ class CustomerOut(CustomerBase):
     tenant_name: str | None = None
     tenant_id: str | None = None
     subscriber: str | None = None
+
+
+class CustomerCommentBase(BaseModel):
+    comment: str = Field(..., min_length=1)
+
+
+class CustomerCommentCreate(CustomerCommentBase):
+    pass
+
+
+class CustomerCommentUpdate(CustomerCommentBase):
+    pass
+
+
+class CustomerCommentOut(CustomerCommentBase):
+    id: str
+    customer_id: str
+    tenant_id: str | None = None
+    author_email: EmailStr | None = None
+    author_name: str | None = None
+    created_at: str
+    updated_at: str
 
 
 class InternalUserOut(BaseModel):

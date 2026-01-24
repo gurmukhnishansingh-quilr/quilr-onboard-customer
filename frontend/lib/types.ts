@@ -23,11 +23,23 @@ export type Customer = {
   department?: string | null;
   vendor?: string | null;
   contact_email?: string | null;
+  comment?: string | null;
   tenant_name?: string | null;
   tenant_id?: string | null;
   subscriber?: string | null;
   instance_id?: string | null;
   instance_name?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CustomerComment = {
+  id: string;
+  customer_id: string;
+  tenant_id?: string | null;
+  comment: string;
+  author_email?: string | null;
+  author_name?: string | null;
   created_at: string;
   updated_at: string;
 };
